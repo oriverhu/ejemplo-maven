@@ -64,5 +64,14 @@ docker run -it --rm -v $(pwd):/code --workdir /code maven mvn clean test -e
 docker run -it --rm -v $(pwd):/code --workdir /code maven mvn clean package -e
 
 ### Run Jar
-docker run -it --rm -p 8081:8081  -v $(pwd):/code --workdir /code maven mvn spring-boot:run
+docker run -it --rm -p 8081:8081 --name maven -v $(pwd):/code --workdir /code maven mvn spring-boot:run
 ```
+
+
+--> correr con ngrok
+docker run --rm -it --name server-ngrok-maven \
+--env-file .env.ngrok \
+-e NGROK_LOOK_DOMAIN=maven \
+-e NGROK_PORT=8081 \
+-e NGROK_REGION=us \
+--link maven wernight/ngrok
