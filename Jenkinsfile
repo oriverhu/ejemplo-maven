@@ -33,6 +33,13 @@ pipeline {
                 }
             }
         }
+        stage("Paso final"){
+            steps {
+                script {
+                sh "ok oriverhu'"
+                }
+            }
+        }
     }
     post {
         always {
