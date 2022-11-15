@@ -13,11 +13,13 @@ pipeline {
                 }
             }
         }
-        stage("Sonar: Análisis SonarQube"){
+        stage('Test Sonar con Name-Discovery') {
             steps {
-                sh "echo 'Calling sonar Service in another docker container!'"
-                // Run Maven on a Unix agent to execute Sonar.
-                sh './mvnw clean verify sonar:sonar'
+                withSonarQubeEnv('sonarqube') {
+                    sh "echo 'Calling sonar Service in another docker container!'"
+                    // Run Maven on a Unix agent to execute Sonar.
+                    sh './mvnw clean verify sonar:sonar'
+                }
             }
         }
     }
