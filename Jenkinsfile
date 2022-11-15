@@ -13,7 +13,7 @@ pipeline {
                 }
             }
         }
-        stage('Test Sonar con Name-Discovery') {
+        stage('Test with Sonarqube') {
             steps {
                 withSonarQubeEnv('sonarqube') {
                     sh "echo 'Calling sonar Service in another docker container!'"
