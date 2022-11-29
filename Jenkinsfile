@@ -1,15 +1,15 @@
-#!groovy
+#!groovy​
 
 stage("Intro"){
         node {
-            sh "Hola"
+            sh "echo 'Hola'"
         }
 }
 
 if (env.BRANCH_NAME =~ ".*release/.*" || env.BRANCH_NAME =~ ".*feature/.*") {
     stage("CI"){
         node {
-            sh "INTEGRACION"
+            sh "echo 'INTEGRACION'"
         }
     }   
 }
@@ -18,7 +18,7 @@ if (env.BRANCH_NAME =~ ".*release/.*" || env.BRANCH_NAME =~ ".*feature/.*") {
 if (env.BRANCH_NAME =~ ".*master" || ".*development") {
     stage("CD"){
         node {
-            sh "DESPLIEGUE"
+            sh "echo 'DESPLIEGUE'"
         }
     }   
 }
