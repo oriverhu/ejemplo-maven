@@ -1,4 +1,4 @@
-#!groovy​
+#!groovy
 
 stage("Intro"){
         node {
@@ -24,17 +24,22 @@ if (env.BRANCH_NAME =~ ".*release/.*" || env.BRANCH_NAME =~ ".*feature/.*") {
     }
     stage("Paso 3: Build .Jar"){
         node {
-            script {
-            sh "echo 'Build .Jar!'"
-            // Run Maven on a Unix agent.
-            sh "./mvnw  clean package -e"
+            try {
+                script {
+                sh "echo 'Build .Jar!'"
+                // Run Maven on a Unix agent.
+                sh "./mvnw  clean package -e"
+                }
+            }catch (e) {
+                echo 'This will run only if failed'
+                throw e
             }
-        }
-        post {
-            //record the test results and archive the jar file.
-            success {
-                archiveArtifacts artifacts:'build/*.jar'
-            }
+            finally {
+                // if (currentBuild.result == 'UNSTABLE') {
+                //     echo 'This will run only if the run was marked as unstable'
+                // }
+                echo 'current result: ' currentBuild.result
+            } 
         }
     }
     stage("Paso 4: Análisis SonarQube"){
