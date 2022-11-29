@@ -15,7 +15,7 @@ if (env.BRANCH_NAME =~ ".*release/.*" || env.BRANCH_NAME =~ ".*feature/.*") {
 }
 
 
-if (env.BRANCH_NAME =~ ".*master" || ".*development") {
+if (env.BRANCH_NAME =~ ".*master" || env.BRANCH_NAME =~  ".*development") {
     stage("CD"){
         node {
             sh "echo 'DESPLIEGUE'"
