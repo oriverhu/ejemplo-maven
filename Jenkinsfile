@@ -1,48 +1,63 @@
-import groovy.json.JsonSlurperClassic
+#!groovy​
 
-def jsonParse(def json) {
-    new groovy.json.JsonSlurperClassic().parseText(json)
+stage("Intro"){
+        node {
+            sh "echo 'Hola'"
+        }
 }
-pipeline {
-    agent any
-    stages {
-        stage("Paso 1: Saludar"){
-            steps {
-                script {
-                sh "echo 'Hello, World Usach!'"
-                }
-            }
+
+if (env.BRANCH_NAME =~ ".*release/.*" || env.BRANCH_NAME =~ ".*feature/.*") {
+    stage("Paso 1: Compliar"){
+        node {
+            sh "echo 'Compile Code! oriverhu'"
+            sh "./mvnw clean compile -e"
         }
-        stage("Paso 2: Crear Archivo"){
-            steps {
-                script {
-                sh "echo 'Hello, World Usach!!' > hello-devops-usach-.txt"
-                }
-            }
-        }
-        stage("Paso 3: Guardar Archivo"){
-            steps {
-                script {
-                sh "echo 'Persisitir Archivo!'"
-                }
-            }
-            post {
-                //record the test results and archive the jar file.
-                success {
-                    archiveArtifacts(artifacts:'**/*.txt', followSymlinks:false)
-                }
+    }
+    stage("Paso 2: Testear"){
+        node {
+            script {
+            sh "echo 'Test Code!'"
+            // Run Maven on a Unix agent.
+            sh "./mvnw clean test -e"
             }
         }
     }
-    post {
-        always {
-            sh "echo 'fase always executed post'"
-        }
-        success {
-            sh "echo 'fase success'"
-        }
-        failure {
-            sh "echo 'fase failure'"
+    stage("Paso 3: Build .Jar"){
+        node {
+            try {
+                script {
+                sh "echo 'Build .Jar!'"
+                // Run Maven on a Unix agent.
+                sh "./mvnw  clean package -e"
+                }
+            }catch (e) {
+                echo 'This will run only if failed'
+                throw e
+            }
+            finally {
+                if (currentBuild.result == '') {
+                    echo 'its ok'
+                    archiveArtifacts artifacts:'build/*.jar'
+                }
+            } 
         }
     }
+    stage("Paso 4: Análisis SonarQube"){
+        node {
+            withSonarQubeEnv('sonarqube') {
+                sh "echo 'Calling sonar Service in another docker container!'"
+                // Run Maven on a Unix agent to execute Sonar.
+                sh './mvnw  clean verify sonar:sonar -Dsonar.projectKey=ejemplo-maven'
+            }
+        }
+    } 
+}
+
+
+if (env.BRANCH_NAME =~ ".*main" || env.BRANCH_NAME =~  ".*develop") {
+    stage("CD"){
+        node {
+            sh "echo 'DESPLIEGUE'"
+        }
+    }   
 }
