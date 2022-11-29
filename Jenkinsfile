@@ -58,9 +58,9 @@ pipeline {
                 steps {
                     script {
                     sh "echo 'Hola oriverhu'"
+                    }
                 }
             }
-
         }
     }
 
