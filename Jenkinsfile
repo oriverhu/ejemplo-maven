@@ -5,6 +5,8 @@ def jsonParse(def json) {
 }
 pipeline {
     agent any
+
+if (env.BRANCH_NAME =~ ".*release/.*" && env.BRANCH_NAME =~ ".*feature/.*") {    
     stages {
         stage("Paso 1: Compliar"){
             steps {
@@ -49,6 +51,7 @@ pipeline {
             }
         }
     }
+}
     post {
         always {
             sh "echo 'fase always executed post'"
