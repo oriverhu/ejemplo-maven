@@ -8,16 +8,13 @@ stage("Intro"){
 
 if (env.BRANCH_NAME =~ ".*release/.*" || env.BRANCH_NAME =~ ".*feature/.*") {
     stage("Paso 1: Compliar"){
-        steps {
-            script {
+        node {
             sh "echo 'Compile Code! oriverhu'"
-            // Run Maven on a Unix agent.
             sh "./mvnw clean compile -e"
-            }
         }
     }
     stage("Paso 2: Testear"){
-        steps {
+        node {
             script {
             sh "echo 'Test Code!'"
             // Run Maven on a Unix agent.
@@ -26,7 +23,7 @@ if (env.BRANCH_NAME =~ ".*release/.*" || env.BRANCH_NAME =~ ".*feature/.*") {
         }
     }
     stage("Paso 3: Build .Jar"){
-        steps {
+        node {
             script {
             sh "echo 'Build .Jar!'"
             // Run Maven on a Unix agent.
@@ -41,7 +38,7 @@ if (env.BRANCH_NAME =~ ".*release/.*" || env.BRANCH_NAME =~ ".*feature/.*") {
         }
     }
     stage("Paso 4: Análisis SonarQube"){
-        steps {
+        node {
             withSonarQubeEnv('sonarqube') {
                 sh "echo 'Calling sonar Service in another docker container!'"
                 // Run Maven on a Unix agent to execute Sonar.
