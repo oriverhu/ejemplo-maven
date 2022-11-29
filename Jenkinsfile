@@ -1,4 +1,4 @@
-#!groovy
+#!groovy​
 
 stage("Intro"){
         node {
@@ -35,10 +35,10 @@ if (env.BRANCH_NAME =~ ".*release/.*" || env.BRANCH_NAME =~ ".*feature/.*") {
                 throw e
             }
             finally {
-                // if (currentBuild.result == 'UNSTABLE') {
-                //     echo 'This will run only if the run was marked as unstable'
-                // }
-                echo 'current result: ' currentBuild.result
+                if (currentBuild.result == '') {
+                    echo 'its ok'
+                    archiveArtifacts artifacts:'build/*.jar'
+                }
             } 
         }
     }
