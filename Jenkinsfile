@@ -5,9 +5,12 @@ def jsonParse(def json) {
 }
 pipeline {
     agent any
-
-if (env.BRANCH_NAME =~ ".*release/.*" || env.BRANCH_NAME =~ ".*feature/.*") {    
+  
     stages {
+        when {
+            branch 'feature'
+        }
+
         stage("Paso 1: Compliar"){
             steps {
                 script {
@@ -51,7 +54,7 @@ if (env.BRANCH_NAME =~ ".*release/.*" || env.BRANCH_NAME =~ ".*feature/.*") {
             }
         }
     }
-}
+
     post {
         always {
             sh "echo 'fase always executed post'"
