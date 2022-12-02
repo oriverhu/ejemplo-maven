@@ -5,90 +5,115 @@ def jsonParse(def json) {
 }
 pipeline {
     agent any
+    environment {
+        channel='C04BPL2A5E3'
+        NEXUS_PASSWORD     = credentials('id-llamador')
+    }
     stages {
-        stage("Paso 1: Compliar"){
+     
+        stage("Paso 1: Build && Test"){
             steps {
-                script {
-                env.STAGE='Paso 1: Compliar'
-                sh "echo 'Compile Code!'"
-                // Run Maven on a Unix agent.
-                sh "./mvnw clean compile -e"
+                script{
+                    sh "echo 'Build && Test!'"
+                    sh "./mvnw clean package -e"    
                 }
             }
         }
-        stage("Paso 2: Testear"){
+
+        stage("Paso 2: Sonar - Análisis Estático"){
             steps {
-                script {
-                env.STAGE='Paso 2: Testear'
-                sh "echo 'Test Code!'"
-                // Run Maven on a Unix agent.
-                sh "./mvnw clean test -e"
+                script{
+                    sh "echo 'Análisis Estático!'"
+                        withSonarQubeEnv('sonarqube') {
+                            sh "echo 'Calling sonar by ID!'"
+                            // Run Maven on a Unix agent to execute Sonar.
+                            sh './mvnw clean verify sonar:sonar -Dsonar.projectKey=ejemplo-maven-full-stages -Dsonar.projectName=cejemplo-maven-full-stages -Dsonar.java.binaries=build'
+                        }
+                        
                 }
             }
         }
-        stage("Paso 3: Build .Jar"){
+        
+        stage("Paso 3: Curl Springboot maven sleep 20"){
             steps {
-                script {
-                env.STAGE='Paso 3: Build .Jar'
-                sh "echo 'Build .Jar!'"
-                // Run Maven on a Unix agent.
-                sh "./mvnw clean package -e"
-                }
-            }
-            post {
-                //record the test results and archive the jar file.
-                success {
-                    archiveArtifacts artifacts:'build/*.jar'
-                }
-            }
-        }
-        stage("Paso 4: Análisis SonarQube"){
-            steps {
-                script {
-                    env.STAGE='Paso 4: Analisis SonarQube'
-                }
-                withSonarQubeEnv('sonarqube') {
-                    sh "echo 'Calling sonar Service in another docker container!'"
-                    // Run Maven on a Unix agent to execute Sonar.
-                    sh './mvnw clean verify sonar:sonar -Dsonar.projectKey=custom-project-key'
-                }
-            }
-        }
-        stage("Paso 5: Run Jar"){
-            steps {
-                script {
-                    echo "corriendo..."
-                     sh "nohup bash ./mvnw spring-boot:run  & >/dev/null"
+                script{
+                    sh "nohup bash ./mvnw spring-boot:run  & >/dev/null"
                     sh "sleep 20 && curl -X GET 'http://localhost:8081/rest/mscovid/test?msg=testing'"
                 }
             }
-        }        
-        stage("Paso 6: Test newman"){
+        }
+        stage("Paso 4: Detener Spring Boot"){
+            steps {
+                script{
+                    sh '''
+                        echo 'Process Spring Boot Java: ' $(pidof java | awk '{print $1}')  
+                        sleep 20
+                        kill -9 $(pidof java | awk '{print $1}')
+                    '''
+                }
+            }
+        }      
+        stage("Paso 5: Test newman"){
             steps {
                 script {
                     echo "ejecutando test..."
                    sh "newman run ./ejemplo-maven.postman_collection.json"
                 }
             }
-        }        
-        stage('Paso 7: Reportar en Slack') {
+        }  
+           stage("Paso 6: Subir Artefacto a Nexus"){
             steps {
                 script{
-                   env.STAGE='Paso 6: Reportar en Slack'
-                   sh 'echo "Testins stage && Slack"'
+                    nexusPublisher nexusInstanceId: 'nexus',
+                        nexusRepositoryId: 'maven-usach-ceres',
+                        packages: [
+                            [$class: 'MavenPackage',
+                                mavenAssetList: [
+                                    [classifier: '',
+                                    extension: 'jar',
+                                    filePath: 'build/DevOpsUsach2020-0.0.1.jar'
+                                ]
+                            ],
+                                mavenCoordinate: [
+                                    artifactId: 'DevOpsUsach2020',
+                                    groupId: 'com.devopsusach2020',
+                                    packaging: 'jar',
+                                    version: '0.0.1'
+                                ]
+                            ]
+                        ]
                 }
             }
         }
-    }
-    post {
-        always {
-            sh "echo 'fase always executed post'"
+        stage("Paso 7: Descargar Nexus"){
+            steps {
+                script{
+                    sh ' curl -X GET -u admin:$NEXUS_PASSWORD "http://nexus:8081/repository/maven-usach-ceres/com/devopsusach2020/DevOpsUsach2020/0.0.1/DevOpsUsach2020-0.0.1.jar" -O'
+                }
+            }
         }
-		success{
-            slackSend color: 'good', message: "[OriVerhu] [${JOB_NAME}] [${BUILD_TAG}] Ejecucion Exitosa", teamDomain: 'devopsusach20-lzc3526', tokenCredentialId: 'token-slack'
+         stage("Paso 8: Levantar Artefacto Jar en server Jenkins"){
+            steps {
+                script{
+                    sh 'nohup java -jar DevOpsUsach2020-0.0.1.jar & >/dev/null'
+                }
+            }
         }
-        failure{
-            slackSend color: 'danger', message: "[OriVerhu] [${env.JOB_NAME}] [${BUILD_TAG}] Ejecucion fallida en stage [${env.STAGE}]", teamDomain: 'devopsusach20-lzc3526', tokenCredentialId: 'token-slack'
+          stage("Paso 9: Testear Artefacto - Dormir(Esperar 20sg) "){
+            steps {
+                script{
+                    sh "sleep 20 && curl -X GET 'http://localhost:8081/rest/mscovid/test?msg=testing'"
+                }
+            }
+        }
+        stage("Paso 10:Detener Atefacto jar en Jenkins server"){
+            steps {
+                sh '''
+                    echo 'Process Java .jar: ' $(pidof java | awk '{print $1}')  
+                    sleep 20
+                    kill -9 $(pidof java | awk '{print $1}')
+                '''
+            }
         }
     }
 }
