@@ -57,8 +57,10 @@ pipeline {
         stage("Paso 5: Test newman"){
             steps {
                 script {
-                   sh "pwd"
-                   sh "ls"
+                    echo "corriendo..."
+                    sh "./mvnw spring-boot:run "
+                
+                    echo "ejecutando test..."
                    sh "newman run ./ejemplo-maven.postman_collection.json"
                 }
             }
@@ -66,7 +68,7 @@ pipeline {
         stage('Paso 6: Reportar en Slack') {
             steps {
                 script{
-                   env.STAGE='Paso 5: Reportar en Slack'
+                   env.STAGE='Paso 6: Reportar en Slack'
                    sh 'echo "Testins stage && Slack"'
                 }
             }
@@ -77,10 +79,10 @@ pipeline {
             sh "echo 'fase always executed post'"
         }
 		success{
-					slackSend color: 'good', message: "[Luis Dominguez] [${JOB_NAME}] [${BUILD_TAG}] Ejecucion Exitosa", teamDomain: 'devopsusach20-lzc3526', tokenCredentialId: 'token-slack'
+					slackSend color: 'good', message: "[OriVerhu] [${JOB_NAME}] [${BUILD_TAG}] Ejecucion Exitosa", teamDomain: 'devopsusach20-lzc3526', tokenCredentialId: 'token-slack'
 				}
 				failure{
-					slackSend color: 'danger', message: "[Luis Dominguez] [${env.JOB_NAME}] [${BUILD_TAG}] Ejecucion fallida en stage [${env.STAGE}]", teamDomain: 'devopsusach20-lzc3526', tokenCredentialId: 'token-slack'
+					slackSend color: 'danger', message: "[OriVerhu] [${env.JOB_NAME}] [${BUILD_TAG}] Ejecucion fallida en stage [${env.STAGE}]", teamDomain: 'devopsusach20-lzc3526', tokenCredentialId: 'token-slack'
 				}
     }
 }
