@@ -57,8 +57,8 @@ pipeline {
         stage("Paso 5: Test newman"){
             steps {
                 script {
-                   pwd
-                   ls
+                   sh "pwd"
+                   sh "ls"
                    sh "newman run ./ejemplo-maven.postman_collection.json"
                 }
             }
