@@ -54,18 +54,23 @@ pipeline {
                 }
             }
         }
-        stage("Paso 5: Test newman"){
+        stage("Paso 5: Run Jar"){
             steps {
                 script {
                     echo "corriendo..."
-                    sh "./mvnw spring-boot:run "
-                
+                    sh "./mvnw spring-boot:run &"
+                }
+            }
+        }        
+        stage("Paso 6: Test newman"){
+            steps {
+                script {
                     echo "ejecutando test..."
                    sh "newman run ./ejemplo-maven.postman_collection.json"
                 }
             }
         }        
-        stage('Paso 6: Reportar en Slack') {
+        stage('Paso 7: Reportar en Slack') {
             steps {
                 script{
                    env.STAGE='Paso 6: Reportar en Slack'
@@ -79,10 +84,10 @@ pipeline {
             sh "echo 'fase always executed post'"
         }
 		success{
-					slackSend color: 'good', message: "[OriVerhu] [${JOB_NAME}] [${BUILD_TAG}] Ejecucion Exitosa", teamDomain: 'devopsusach20-lzc3526', tokenCredentialId: 'token-slack'
-				}
-				failure{
-					slackSend color: 'danger', message: "[OriVerhu] [${env.JOB_NAME}] [${BUILD_TAG}] Ejecucion fallida en stage [${env.STAGE}]", teamDomain: 'devopsusach20-lzc3526', tokenCredentialId: 'token-slack'
-				}
+            slackSend color: 'good', message: "[OriVerhu] [${JOB_NAME}] [${BUILD_TAG}] Ejecucion Exitosa", teamDomain: 'devopsusach20-lzc3526', tokenCredentialId: 'token-slack'
+        }
+        failure{
+            slackSend color: 'danger', message: "[OriVerhu] [${env.JOB_NAME}] [${BUILD_TAG}] Ejecucion fallida en stage [${env.STAGE}]", teamDomain: 'devopsusach20-lzc3526', tokenCredentialId: 'token-slack'
+        }
     }
 }
