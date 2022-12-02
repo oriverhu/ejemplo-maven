@@ -103,6 +103,10 @@ try{
 }
 
 catch (e) {
+        slackSend color: 'danger', message: "[OriVerhu] [${env.JOB_NAME}] [${BUILD_TAG}] Ejecucion fallida en stage [${env.STAGE}]", teamDomain: 'devopsusach20-lzc3526', tokenCredentialId: 'token-slack'
         echo 'This will run only if failed'
         throw e
+}
+finally {
+        echo "fin"
 }
