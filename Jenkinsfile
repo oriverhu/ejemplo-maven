@@ -49,6 +49,7 @@ try{
             node {
 
                 sh "echo hola"
+                sh "git fetch --all"
                 sh "git checkout $env.BRANCH_NAME"
                 sh "git pull"
                 sh "git flow init -fd"
