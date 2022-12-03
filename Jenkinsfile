@@ -47,6 +47,7 @@ try{
         } 
         stage("Paso 5: Merge"){
             node {
+                 sh "git flow version"
                  sh "'git flow $BRANCH_TYPE finish $BRANCH'"
             }
         } 
