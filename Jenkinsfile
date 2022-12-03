@@ -6,6 +6,9 @@ stage("Intro"){
         }
 }
 
+def BRANCH = "${env.BRANCH_NAME.split("/")[1]}"
+def BRANCH_TYPE = "${env.BRANCH_NAME.split("/")[0]}"
+
 try{
 
     if (env.BRANCH_NAME =~ ".*release/.*" || env.BRANCH_NAME =~ ".*feature/.*") {
@@ -42,6 +45,12 @@ try{
                 }
             }
         } 
+        stage("Paso 5: Merge"){
+            node {
+                 sh "'git flow $BRANCH_TYPE finish $BRANCH'"
+            }
+        } 
+            
     }
 
 
