@@ -48,6 +48,9 @@ try{
         stage("Paso 5: Merge"){
             node {
                  sh "git flow version"
+                sh "git checkout $env.BRANCH_NAME"
+                sh "git pull"
+                sh "git status"
                  sh "'git flow $BRANCH_TYPE finish $BRANCH'"
             }
         } 
