@@ -49,15 +49,9 @@ try{
             node {
 
                 sh "echo hola"
-                sh "git checkout -b develop"
-                 sh "git flow version "
                 sh "git checkout $env.BRANCH_NAME"
                 sh "git pull"
-                sh "git status"
-                sh "git fetch --all"
                 sh "git flow init -fd"
-                sh "git flow config --local"
-                sh "git flow config --global"
                  sh "'git flow $BRANCH_TYPE finish $BRANCH'"
             }
         } 
