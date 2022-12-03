@@ -47,6 +47,8 @@ try{
         // } 
         stage("Paso 5: Merge"){
             node {
+                sh "ls"
+                sh "pwd"
                 sh " git flow version "
                 sh "git checkout $env.BRANCH_NAME"
                 sh "git pull"
