@@ -51,6 +51,9 @@ try{
                 sh "git checkout $env.BRANCH_NAME"
                 sh "git pull"
                 sh "git status"
+                sh "git flow init -fd"
+                sh "git flow config --global"
+                sh "git flow config --local"
                  sh "'git flow $BRANCH_TYPE finish $BRANCH'"
             }
         } 
