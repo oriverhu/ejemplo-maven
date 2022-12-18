@@ -1,125 +1,200 @@
-#!groovy​
+import groovy.json.JsonSlurperClassic
 
-stage("Intro"){
-        node {
-            sh "echo 'Hola'"
-        }
+def jsonParse(def json) {
+    new groovy.json.JsonSlurperClassic().parseText(json)
 }
 
-def BRANCH = "${env.BRANCH_NAME.split("/")[1]}"
-def BRANCH_TYPE = "${env.BRANCH_NAME.split("/")[0]}"
-
-try{
-
-    if (env.BRANCH_NAME =~ ".*release/.*" || env.BRANCH_NAME =~ ".*feature/.*") {
-        stage("Paso 1: Compliar"){
-            node {
-                sh "echo 'Compile Code! oriverhu'"
-                sh "./mvnw clean compile -e"
-            }
-        }
-        stage("Paso 2: Testear"){
-            node {
-                script {
-                sh "echo 'Test Code!'"
-                // Run Maven on a Unix agent.
-                sh "./mvnw clean test -e"
-                }
-            }
-        }
-        stage("Paso 3: Build .Jar"){
-            node {
-                    script {
-                    sh "echo 'Build .Jar!'"
-                    // Run Maven on a Unix agent.
-                    sh "./mvnw  clean package -e"
-                    }            
-            }
-        }
-        stage("Paso 4: Análisis SonarQube"){
-            node {
-                withSonarQubeEnv('sonarqube') {
-                    sh "echo 'Calling sonar Service in another docker container!'"
-                    // Run Maven on a Unix agent to execute Sonar.
-                    sh './mvnw  clean verify sonar:sonar -Dsonar.projectKey=ejemplo-maven'
-                }
-            }
-        } 
-        stage("Paso 5: Merge"){
-            node {
-                 sh "git flow version"
-                sh "git checkout $env.BRANCH_NAME"
-                sh "git pull"
-                sh "git status"
-                 sh "'git flow $BRANCH_TYPE finish $BRANCH'"
-            }
-        } 
-            
+pipeline {
+    agent any
+    environment {
+        NEXUS_PASSWORD = credentials('03284632-f55a-44f1-b319-3dcb119e43b5')
+        BRANCH = "${env.BRANCH_NAME.split("/")[1]}"
+        VERSION = "${env.BRANCH_NAME.split("/")[1]}"        
     }
-
-
-    if (env.BRANCH_NAME =~ ".*main" || env.BRANCH_NAME =~  ".*develop") {
-        stage("CD"){
-            node {
-                sh "echo 'DESPLIEGUE'"
+    stages {    
+        stage("CI 1: Compilar"){
+        environment { STAGE='CI 1: Compilar' }
+            steps {
+                script{
+                    sh "echo 'Compile Code!!'"
+                    sh "./mvnw clean compile -e"    
+                }
             }
-        }  
-        stage("Paso 1: Subir Artefacto a Nexus"){
-                node {
-                        nexusPublisher nexusInstanceId: 'nexus',
-                            nexusRepositoryId: 'maven-usach-ceres',
-                            packages: [
-                                [$class: 'MavenPackage',
-                                    mavenAssetList: [
-                                        [classifier: '',
-                                        extension: 'jar',
-                                        filePath: 'build/DevOpsUsach2020-0.0.1.jar'
-                                    ]
-                                ],
-                                    mavenCoordinate: [
-                                        artifactId: 'DevOpsUsach2020',
-                                        groupId: 'com.devopsusach2020',
-                                        packaging: 'jar',
-                                        version: '0.0.1'
-                                    ]
+            post{
+				failure{
+					  slackSend color: 'danger', message: "[OriVerhu] [${env.JOB_NAME}] [${BUILD_TAG}] Ejecucion fallida en stage [${env.STAGE}]", teamDomain: 'devopsusach20-lzc3526', tokenCredentialId: 'token-slack'
+				}
+        }            
+        }
+        stage("CI 2: Testear"){
+            environment { STAGE='CI 2: Testear'}
+            steps {
+                script{
+                    sh "echo 'Test Code!'"
+                    sh "./mvnw clean test -e"    
+                }
+            }
+            post{
+				failure{
+					    slackSend color: 'danger', message: "[OriVerhu] [${env.JOB_NAME}] [${BUILD_TAG}] Ejecucion fallida en stage [${env.STAGE}]", teamDomain: 'devopsusach20-lzc3526', tokenCredentialId: 'token-slack'
+				}
+        }    
+        }
+        stage("CI 3: Build release .Jar"){
+            when { branch 'release/*'}
+            environment { STAGE="CI 3: Build .Jar" }
+            steps {
+                script{
+                    sh "echo 'Building jar and adding version'"
+                    sh "./mvnw  clean package -e versions:set -DnewVersion=${VERSION}"
+                }
+            }
+            post{
+				failure{
+					slackSend color: 'danger', message: "[OriVerhu] [${env.JOB_NAME}] [${BUILD_TAG}] Ejecucion fallida en stage [${env.STAGE}]", teamDomain: 'devopsusach20-lzc3526', tokenCredentialId: 'token-slack'
+				}
+        }                
+        }   
+        stage("CI 3: Build .Jar"){
+            when { not { anyOf {branch 'release/*';branch 'main'}} }
+            environment { STAGE="CI 3: Build .Jar" }
+            steps {
+                script{
+                    sh "echo 'Building jar'"
+                    sh "./mvnw clean package -e"
+                }
+            }
+            post{
+				failure{
+					 slackSend color: 'danger', message: "[OriVerhu] [${env.JOB_NAME}] [${BUILD_TAG}] Ejecucion fallida en stage [${env.STAGE}]", teamDomain: 'devopsusach20-lzc3526', tokenCredentialId: 'token-slack'
+				}
+        }                
+        }        
+
+        stage("CI 4: Análisis SonarQube"){
+            environment { STAGE="CI 4: Análisis SonarQube" }
+            steps {
+                script{
+                     withSonarQubeEnv('sonarqube') {
+                            sh "echo 'Calling sonar Service in another docker container!'"
+                            sh './mvnw clean verify sonar:sonar -Dsonar.projectKey=ms-iclab-grupo2  -Dsonar.projectName=ms-iclab-grupo2 -Dsonar.java.binaries=build'
+                        }
+                        
+                }
+            }
+            post{
+				failure{
+					    slackSend color: 'danger', message: "[OriVerhu] [${env.JOB_NAME}] [${BUILD_TAG}] Ejecucion fallida en stage [${env.STAGE}]", teamDomain: 'devopsusach20-lzc3526', tokenCredentialId: 'token-slack'
+				}
+        }                
+        }
+        stage("CD 1: Subir Artefacto a Nexus"){
+            when { branch 'release/*'}
+            environment { STAGE="CD 1: Subir Artefacto a Nexus" }
+            steps {
+                script{
+                    nexusPublisher nexusInstanceId: 'nexus',
+                        nexusRepositoryId: 'repository_grupo2',
+                        packages: [
+                            [$class: 'MavenPackage',
+                                mavenAssetList: [
+                                    [classifier: '',
+                                    extension: 'jar',
+                                    filePath: "build/DevOpsUsach2020-${VERSION}.jar"
                                 ]
-                            ]                
+                            ],
+                                mavenCoordinate: [
+                                    artifactId: 'DevOpsUsach2020',
+                                    groupId: 'com.devopsusach2020',
+                                    packaging: 'jar',
+                                    version: "${VERSION}"
+                                ]
+                            ]
+                        ]
                 }
             }
-            stage("Paso 2: Descargar Nexus"){
-                node {
-                        sh ' curl -X GET -u admin:$NEXUS_PASSWORD "http://nexus:8081/repository/maven-usach-ceres/com/devopsusach2020/DevOpsUsach2020/0.0.1/DevOpsUsach2020-0.0.1.jar" -O'
+            post{
+				failure{
+					     slackSend color: 'danger', message: "[OriVerhu] [${env.JOB_NAME}] [${BUILD_TAG}] Ejecucion fallida en stage [${env.STAGE}]", teamDomain: 'devopsusach20-lzc3526', tokenCredentialId: 'token-slack'
+				}
+        }                
+        }
+        stage("CD 2: Descargar Nexus"){
+            when { branch 'release/*'}
+            environment { STAGE="CD 2: Descargar Nexus" }            
+            steps {
+                script{
+                    sh 'curl -X GET -u admin:$NEXUS_PASSWORD "http://nexus:8081/repository/repository_grupo2/com/devopsusach2020/DevOpsUsach2020/${VERSION}/DevOpsUsach2020-${VERSION}.jar" -O'
                 }
             }
-            stage("Paso 3: Levantar Artefacto Jar en server Jenkins"){
-                node {
-                        sh 'nohup java -jar DevOpsUsach2020-0.0.1.jar & >/dev/null'                
+            post{
+				failure{
+					     slackSend color: 'danger', message: "[OriVerhu] [${env.JOB_NAME}] [${BUILD_TAG}] Ejecucion fallida en stage [${env.STAGE}]", teamDomain: 'devopsusach20-lzc3526', tokenCredentialId: 'token-slack'
+				}
+        }                
+        }
+        stage("CD 3: Levantar Artefacto Jar en server Jenkins"){
+            when { branch 'release/*'}
+            environment { STAGE="CD 3: Levantar Artefacto Jar en server Jenkins" }            
+            steps {
+                script{
+                sh "nohup java -jar DevOpsUsach2020-${VERSION}.jar & >/dev/null" 
                 }
             }
-            stage("Paso 4: Testear Artefacto - Dormir(Esperar 20sg) "){
-                node {
-                        sh "sleep 20 && curl -X GET 'http://localhost:8081/rest/mscovid/test?msg=testing'"                
+            post{
+				failure{
+					     slackSend color: 'danger', message: "[OriVerhu] [${env.JOB_NAME}] [${BUILD_TAG}] Ejecucion fallida en stage [${env.STAGE}]", teamDomain: 'devopsusach20-lzc3526', tokenCredentialId: 'token-slack'
+				}
+        }                
+        }
+        stage("CD 4: Testear Artefacto - Dormir(Esperar 20sg)"){
+            when { branch 'release/*'}
+            environment { STAGE="CD 4: Testear Artefacto - Dormir(Esperar 20sg)" }            
+            steps {
+                script{
+                    sh "sleep 20 && curl -X GET 'http://localhost:8081/rest/mscovid/test?msg=testing'"
                 }
             }
-            stage("Paso 5: Detener Atefacto jar en Jenkins server"){
-                node {
+            post{
+				failure{
+				     slackSend color: 'danger', message: "[OriVerhu] [${env.JOB_NAME}] [${BUILD_TAG}] Ejecucion fallida en stage [${env.STAGE}]", teamDomain: 'devopsusach20-lzc3526', tokenCredentialId: 'token-slack'
+				}
+            }                
+        }
+        stage("CD 5: Test Postam Collection"){
+            when { branch 'release/*'}
+            steps {
+                script {
+                    echo "ejecutando test..."
+                   sh "newman run ./ejemplo-maven.postman_collection.json"
+                }
+            }            
+            post{
+				failure{
+				     slackSend color: 'danger', message: "[OriVerhu] [${env.JOB_NAME}] [${BUILD_TAG}] Ejecucion fallida en stage [${env.STAGE}]", teamDomain: 'devopsusach20-lzc3526', tokenCredentialId: 'token-slack'
+				}
+            }  
+        }          
+        stage("CD 5: Detener Atefacto jar en Jenkins server"){
+            when { branch 'release/*'}
+            environment { STAGE="CD 5: Detener Atefacto jar en Jenkins server" }            
+            steps {
+                script{
                     sh '''
                         echo 'Process Java .jar: ' $(pidof java | awk '{print $1}')  
                         sleep 20
                         kill -9 $(pidof java | awk '{print $1}')
                     '''
                 }
-            }        
-            
+                }
+            post{
+				failure{
+					     slackSend color: 'danger', message: "[OriVerhu] [${env.JOB_NAME}] [${BUILD_TAG}] Ejecucion fallida en stage [${env.STAGE}]", teamDomain: 'devopsusach20-lzc3526', tokenCredentialId: 'token-slack'
+				}
+				success{
+					    slackSend color: 'good', message: "[OriVerhu] [${JOB_NAME}] [${BUILD_TAG}] Ejecucion Exitosa", teamDomain: 'devopsusach20-lzc3526', tokenCredentialId: 'token-slack'
+				}
+                }
+        } 
     }
-        
-}
-
-catch (e) {
-        slackSend color: 'danger', message: "[OriVerhu] [${env.JOB_NAME}] [${BUILD_TAG}] Ejecucion fallida en stage [${env.STAGE}]", teamDomain: 'devopsusach20-lzc3526', tokenCredentialId: 'token-slack'
-        echo 'This will run only if failed'
-        throw e
-}
-finally {
-        echo "fin"
 }
