@@ -159,15 +159,21 @@ pipeline {
 				failure{
 				     slackSend color: 'danger', message: "[OriVerhu] [${env.JOB_NAME}] [${BUILD_TAG}] Ejecucion fallida en stage [${env.STAGE}]", teamDomain: 'devopsusach20-lzc3526', tokenCredentialId: 'token-slack'
 				}
-        }                
+            }                
         }
         stage("CD 5: Test Postam Collection"){
+            when { branch 'release/*'}
             steps {
                 script {
                     echo "ejecutando test..."
                    sh "newman run ./ejemplo-maven.postman_collection.json"
                 }
-            }
+            }            
+            post{
+				failure{
+				     slackSend color: 'danger', message: "[OriVerhu] [${env.JOB_NAME}] [${BUILD_TAG}] Ejecucion fallida en stage [${env.STAGE}]", teamDomain: 'devopsusach20-lzc3526', tokenCredentialId: 'token-slack'
+				}
+            }  
         }          
         stage("CD 5: Detener Atefacto jar en Jenkins server"){
             when { branch 'release/*'}
