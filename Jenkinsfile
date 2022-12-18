@@ -40,21 +40,21 @@ pipeline {
 				}
         }    
         }
-        stage("CI 3: Build release .Jar"){
-            when { branch 'release/*'}
-            environment { STAGE="CI 3: Build .Jar" }
-            steps {
-                script{
-                    sh "echo 'Building jar and adding version'"
-                    sh "./mvnw  clean package -e versions:set -DnewVersion=${VERSION}"
-                }
-            }
-            post{
-				failure{
-					slackSend color: 'danger', message: "[OriVerhu] [${env.JOB_NAME}] [${BUILD_TAG}] Ejecucion fallida en stage [${env.STAGE}]", teamDomain: 'devopsusach20-lzc3526', tokenCredentialId: 'token-slack'
-				}
-        }                
-        }   
+        // stage("CI 3: Build release .Jar"){
+        //     when { branch 'release/*'}
+        //     environment { STAGE="CI 3: Build .Jar" }
+        //     steps {
+        //         script{
+        //             sh "echo 'Building jar and adding version'"
+        //             sh "./mvnw  clean package -e versions:set -DnewVersion=${VERSION}"
+        //         }
+        //     }
+        //     post{
+		// 		failure{
+		// 			slackSend color: 'danger', message: "[OriVerhu] [${env.JOB_NAME}] [${BUILD_TAG}] Ejecucion fallida en stage [${env.STAGE}]", teamDomain: 'devopsusach20-lzc3526', tokenCredentialId: 'token-slack'
+		// 		}
+        // }                
+        // }   
         stage("CI 3: Build .Jar"){
             when { not { anyOf {branch 'release/*';branch 'main'}} }
             environment { STAGE="CI 3: Build .Jar" }
@@ -100,14 +100,14 @@ pipeline {
                                 mavenAssetList: [
                                     [classifier: '',
                                     extension: 'jar',
-                                    filePath: "build/DevOpsUsach2020-${VERSION}.jar"
+                                    filePath: "build/DevOpsUsach2020-0.0.1.jar"
                                 ]
                             ],
                                 mavenCoordinate: [
                                     artifactId: 'DevOpsUsach2020',
                                     groupId: 'com.devopsusach2020',
                                     packaging: 'jar',
-                                    version: "${VERSION}"
+                                    version: "0.0.1"
                                 ]
                             ]
                         ]
@@ -124,7 +124,7 @@ pipeline {
             environment { STAGE="CD 2: Descargar Nexus" }            
             steps {
                 script{
-                    sh 'curl -X GET -u admin:$NEXUS_PASSWORD "http://nexus:8081/repository/repository_grupo2/com/devopsusach2020/DevOpsUsach2020/${VERSION}/DevOpsUsach2020-${VERSION}.jar" -O'
+                    sh 'curl -X GET -u admin:dm201 "http://nexus:8081/repository/x/com/devopsusach2020/DevOpsUsach2020/${VERSION}/DevOpsUsach2020-${VERSION}.jar" -O'
                 }
             }
             post{
