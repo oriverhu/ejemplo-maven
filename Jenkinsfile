@@ -67,7 +67,7 @@ pipeline {
             steps {
                 script {
                     echo "ejecutando test..."
-                   sh "newman run ./ejemplo-maven-4pipe.postman_collection"
+                   sh "newman run ./ejemplo-maven-4pipe.postman_collection.json"
                 }
             }
         }        
