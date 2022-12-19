@@ -93,6 +93,8 @@ pipeline {
             environment { STAGE="CD 1: Subir Artefacto a Nexus" }
             steps {
                 script{
+                    sh "echo comenzando..."
+                    sh "echo ls ./build"
                     nexusPublisher nexusInstanceId: 'nexus',
                         nexusRepositoryId: 'repository_grupo2',
                         packages: [
@@ -100,14 +102,14 @@ pipeline {
                                 mavenAssetList: [
                                     [classifier: '',
                                     extension: 'jar',
-                                    filePath: "build/DevOpsUsach2020-0.0.1.jar"
+                                    filePath: "build/DevOpsUsach2020-2.0.jar"
                                 ]
                             ],
                                 mavenCoordinate: [
                                     artifactId: 'DevOpsUsach2020',
                                     groupId: 'com.devopsusach2020',
                                     packaging: 'jar',
-                                    version: "0.0.1"
+                                    version: "2.0"
                                 ]
                             ]
                         ]
